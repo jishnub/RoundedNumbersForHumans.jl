@@ -48,4 +48,8 @@ import RoundedNumbersForHumans: Scientific, Common
         @test string(RoundedNumber(3_000.6),sigdigits=4) == "3.001k"
     end
 
+    @testset "zero" begin
+        @test string(RoundedNumber(0)) == "0"
+    end
+
 end

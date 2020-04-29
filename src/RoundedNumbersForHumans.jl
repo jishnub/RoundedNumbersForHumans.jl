@@ -28,7 +28,7 @@ struct RoundedNumber{T}
 	exp1000 :: Int
 end
 
-exponent1000(n) = floor(Int,log(1000,n))
+exponent1000(n) = iszero(n) ? 0 : floor(Int,log(1000,n))
 maxexp1000(::Common) = 6
 maxexp1000(::Scientific) = 6
 
