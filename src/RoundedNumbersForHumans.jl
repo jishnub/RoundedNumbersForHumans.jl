@@ -28,25 +28,25 @@ struct RoundedNumber{T}
 	exp1000 :: Int
 end
 
-exponent1000(n::Integer) = floor(Int,log(1000,n))
+exponent1000(n) = floor(Int,log(1000,n))
 maxexp1000(::Common) = 6
 maxexp1000(::Scientific) = 6
 
-function RoundedNumber(n::Integer,suffixtype::SuffixType=Common())
+function RoundedNumber(n,suffixtype::SuffixType=Common())
 	exp1000 = exponent1000(n)
 	exp1000 = min(exp1000,maxexp1000(suffixtype))
 	RoundedNumber(n,exp1000)
 end
 
 prefixnumdigits(r::RoundedNumber) = prefixnumdigits(r.n,r.exp1000)
-function prefixnumdigits(n::Integer,exp1000::Integer)
+function prefixnumdigits(n,exp1000::Integer)
 	ceil(Int,log10(n)) - 3*exp1000
 end
 
 function numberprefix(r::RoundedNumber;kwargs...)
 	numberprefix(r.n,r.exp1000,kwargs...)
 end
-function numberprefix(n::Integer,exp1000::Integer;sigdigits=3)
+function numberprefix(n,exp1000::Integer;sigdigits=3)
 	round(n/1000^exp1000,sigdigits=sigdigits)
 end
 

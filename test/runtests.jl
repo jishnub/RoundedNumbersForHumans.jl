@@ -41,4 +41,11 @@ import RoundedNumbersForHumans: Scientific, Common
     	end
     end
 
+    @testset "float" begin
+        @test string(RoundedNumber(300.3)) == "300"
+        @test string(RoundedNumber(300.6)) == "301"
+        @test string(RoundedNumber(3_000.6)) == "3k"
+        @test string(RoundedNumber(3_000.6),sigdigits=4) == "3.001k"
+    end
+
 end
