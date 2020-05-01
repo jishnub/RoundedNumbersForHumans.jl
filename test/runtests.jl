@@ -52,4 +52,10 @@ import RoundedNumbersForHumans: Scientific, Common
         @test string(RoundedNumber(0)) == "0"
     end
 
+    @testset "negative" begin
+        @test string(RoundedNumber(-30)) == "-30"
+        @test string(RoundedNumber(-3000)) == "-3k"
+        @test string(RoundedNumber(-30_000)) == "-30k"
+    end
+
 end
