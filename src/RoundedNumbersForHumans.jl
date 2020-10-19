@@ -6,65 +6,90 @@ abstract type SuffixType end
 struct Scientific <: SuffixType end
 struct Common <: SuffixType end
 
-const suffixlistcommon = Dict(1=>"k", # kilo
-					2=>"M", # millions
-					3=>"B", # billions
-					4=>"T", # trillions
-					5=>"Qd", # quadrillions
-					6=>"Qn") # quintillions
+const suffixlistcommon = Dict(
+    -1=>"m", # one-thousandth
+    -2=>"μ", # one-millionth
+    -3=>"n", # one-billionth
+    -4=>"p", # one-trillionth
+    -5=>"f", # one-quadrillionth
+    -6=>"a", # one-quintillionth
+    1=>"k", # kilo
+    2=>"M", # millions
+    3=>"B", # billions
+    4=>"T", # trillions
+    5=>"Qd", # quadrillions
+    6=>"Qn", # quintillions
+    )
 
-const suffixlistscientific = Dict(1=>"k", # kilo
-					2=>"M", # mega
-					3=>"G", # giga
-					4=>"T", # tera
-					5=>"P", # peta
-					6=>"E") # exa
+const suffixlistscientific = Dict(
+    -1=>"m", # milli
+    -2=>"μ", # micro
+    -3=>"n", # nano
+    -4=>"p", # pico
+    -5=>"f", # femto
+    -6=>"a", # atto
+    -7=>"z", # zepto
+    -8=>"y", # yocto
+    1=>"k", # kilo
+    2=>"M", # mega
+    3=>"G", # giga
+    4=>"T", # tera
+    5=>"P", # peta
+    6=>"E", # exa
+    7=>"Z", # zetta
+    8=>"Y", # yotta
+    )
 
-suffixlist(::Common) = suffixlistcommon
-suffixlist(::Scientific) = suffixlistscientific
+suffixlist(::Type{Common}) = suffixlistcommon
+suffixlist(::Type{Scientific}) = suffixlistscientific
+suffixlist(s::SuffixType) = suffixlist(typeof(s))
 
-struct RoundedNumber{T}
-	n :: T
-	exp1000 :: Int
+struct RoundedNumber{S<:SuffixType,T} <: Number
+    n :: T
+    exp1000 :: Int
 end
 
-exponent1000(n) = iszero(n) ? 0 : floor(Int,log(1000,abs(n)))
-maxexp1000(::Common) = 6
-maxexp1000(::Scientific) = 6
+RoundedNumber{S}(n, exp1000) where {S<:SuffixType} = RoundedNumber{S, typeof(n)}(n, exp1000)
 
-function RoundedNumber(n,suffixtype::SuffixType=Common())
-	exp1000 = exponent1000(n)
-	exp1000 = min(exp1000,maxexp1000(suffixtype))
-	RoundedNumber(n,exp1000)
+exponent1000(n) = iszero(n) ? 0 : floor(Int, log(1000,abs(n)))
+minexp1000(s::SuffixType) = minimum(keys(suffixlist(s)))
+maxexp1000(s::SuffixType) = maximum(keys(suffixlist(s)))
+
+function RoundedNumber(n, suffixtype::SuffixType = Common())
+    exp1000 = exponent1000(n)
+    exp1000 = min(exp1000, maxexp1000(suffixtype))
+    exp1000 = max(exp1000, minexp1000(suffixtype))
+    RoundedNumber{typeof(suffixtype)}(n, exp1000)
 end
 
 prefixnumdigits(r::RoundedNumber) = prefixnumdigits(r.n,r.exp1000)
-function prefixnumdigits(n,exp1000::Integer)
-	ceil(Int,log10(n)) - 3*exp1000
+function prefixnumdigits(n, exp1000)
+    ceil(Int,log10(n)) - 3exp1000
 end
 
-function numberprefix(r::RoundedNumber;kwargs...)
-	numberprefix(r.n,r.exp1000,kwargs...)
+function numberprefix(r::RoundedNumber; kwargs...)
+    numberprefix(r.n, r.exp1000; kwargs...)
 end
-function numberprefix(n,exp1000::Integer;sigdigits=3)
-	round(n/1000^exp1000,sigdigits=sigdigits)
-end
-
-function Base.string(r::RoundedNumber,suffixtype::SuffixType=Common();kwargs...)
-	if r.exp1000 != 0
-		suffix = suffixlist(suffixtype)[r.exp1000]
-	else
-		suffix = ""
-	end
-	prefixnum = numberprefix(r.n,r.exp1000;kwargs...)
-	# Not type-stable !
-	if isinteger(prefixnum)
-		prefixnum = Int(prefixnum)
-	end
-	prefix = string(prefixnum)
-	prefix*suffix
+function numberprefix(n, exp1000; sigdigits=3)
+    y = sign(n) * round(10^(log10(abs(n)) - 3exp1000), sigdigits=sigdigits)
+    maybeInt(y)
 end
 
-Base.show(io::IO,r::RoundedNumber) = print(io,string(r))
+maybeInt(y) = isinteger(y) ? Integer(y) : y
+
+function Base.string(r::RoundedNumber{S}; kwargs...) where {S}
+    if r.exp1000 != 0
+        suffix = suffixlist(S)[r.exp1000]
+    else
+        suffix = ""
+    end
+    prefixnum = numberprefix(r.n, r.exp1000; kwargs...)
+    prefix = string(prefixnum)
+    prefix*suffix
+end
+
+(::Type{T})(r::RoundedNumber) where {T<:Number} = T(r.n)
+
+Base.show(io::IO, r::RoundedNumber) = print(io, string(r))
 
 end # module
